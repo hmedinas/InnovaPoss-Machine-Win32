@@ -1,0 +1,46 @@
+from configparser import ConfigParser
+
+from innovapos.shared.data.utils import Singleton
+
+
+@Singleton
+class ConfigHelper:
+    def __init__(self):
+        """
+        Simplifies access to configuration files. Configuration files are loaded into the class itself by calling 
+        `load_config` and the recovered by calling `get_config`. 
+        """
+        self._configparsers_: dict[str, ConfigParser] = {}
+        pass  # do nothing
+
+    def load_config(self, config_type: str, path: str) -> None:
+        """
+        Loads the config from the specified path and stores it under the specified "type" key
+        :param config_type: 
+        :type config_type: 
+        :param path: 
+        :type path: 
+        :return: 
+        :rtype: 
+        """
+        if config_type in self._configparsers_.keys():
+            raise ValueError(f"Config with name {config_type} already registered.")
+        config = ConfigParser()
+        self._configparsers_[config_type] = config
+        config.read(path)
+
+    def get_config(self, config_type: str) -> ConfigParser:
+        """
+        Recovers the config with the specified type
+        :param config_type: config type to recover
+        :type config_type: str
+        :return: corresponding ConfigParser
+        :rtype: ConfigParser
+        """
+        config = self._configparsers_[config_type]
+        if not config:
+            raise ValueError(f"Config with name {config_type} does not exist")
+        return config
+
+
+

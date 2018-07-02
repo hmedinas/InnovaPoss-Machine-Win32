@@ -1,0 +1,27 @@
+syntax = "proto3";
+package innovapos;
+import 'innovapos/shared/protocols/common.proto';
+
+message MessageMetadata{
+    string request_msg_id = 1;
+    StatusCodes status_code = 2;
+    bool is_successful = 3;
+}
+
+message GenericResponse{
+    MessageMetadata metadata = 1;
+    string content = 2;
+}
+
+message ErrorResponse {
+    MessageMetadata metadata = 1;
+    string error_message = 2;
+    string stack_trace = 3;
+}
+
+message AppLockRequest{
+    MessageMetadata metadata = 1;
+    string device_id = 2;
+    string product_id = 3;
+}
+

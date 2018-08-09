@@ -26,7 +26,7 @@ def CCM_Getstatus(Accion:str=None) -> MessageJson():
         _Result.Mensaje = ''
     else:
         _Result.Status = 'KO'
-        _Result.Mensaje = ErrorProcess.CCM_SELECT
+        _Result.Mensaje = ErrorProcess.CCM_STATUS
     return _Result
 
 def CCM_Select(_Carril:str,Accion:str=None) -> MessageJson():
@@ -39,7 +39,7 @@ def CCM_Select(_Carril:str,Accion:str=None) -> MessageJson():
         _Result.Mensaje = ''
     else:
         _Result.Status = 'KO'
-        _Result.Mensaje = ErrorProcess.CCM_OUT_PRODUC
+        _Result.Mensaje = ErrorProcess.CCM_SELECT
     return _Result
 
 def CCM_Write(_Carril:str,Accion:str=None) ->MessageJson():
@@ -49,8 +49,10 @@ def CCM_Write(_Carril:str,Accion:str=None) ->MessageJson():
     print(f"Respuesta Write: {rpt}")
     if 'OK' in rpt:
         _Result.Status='OK'
+        _Result.Mensaje = ''
     else:
         _Result.Status='KO'
+        _Result.Mensaje = ErrorProcess.CCM_WRITE
     return _Result
 def GetStockStar():
     reply = worker.hardware_client.transact_message_to_ccm("CCM_stockfull")
@@ -513,7 +515,9 @@ def DispacherProduct(client: BlockingAMQPClient, props: pika.spec.BasicPropertie
                         oQueueDestroid.newMessageServer(msgNew, props=None, queue_name=NameQueueServer())
                         time.sleep(0.5)
                         #cambiamos el stado para retirar el producto
-                        worker.current_state = WorkerStates.WAIT_PRODUCT_OUT
+                        worker.current_state = WorkerStates.WAIT_PRODUCT_OUT #//fecha 09/08/2018
+                        #worker.current_state = WorkerStates.IDLE
+
                         print('===================================')
                         print('ENVIO DE COMPRA LA SERVIDOR')
                         AddTimeConectionWorker(15)

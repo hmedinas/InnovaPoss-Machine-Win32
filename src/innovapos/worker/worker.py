@@ -216,6 +216,7 @@ class HardwareWorker:
         self.isFinish:bool=False
 
     def restart(self):
+        self.current_state = WorkerStates.IDLE
         self.KeyApi: str = None
         self.KeyTime: int = 0
         self.new_inc_queue: str = None

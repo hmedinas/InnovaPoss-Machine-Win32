@@ -399,7 +399,10 @@ def PrepareProduct(client: BlockingAMQPClient, props: pika.spec.BasicProperties,
         msg = worker.messageJsonOutput(_Result)
         print('Enviando Correo APP: PREPARE')
         print(f'Estado Maquina: {worker.current_state}')
-        worker.cur_app_user_client.send_message(f'{msg}', props)
+        if(worker.current_state==WorkerStates.APP or worker.current_state==WorkerStates.WAIT_PRODUCT_OUT):
+            worker.cur_app_user_client.send_message(f'{msg}', props)
+        else:
+            print(f'>>> Sin cola a cual notificar')
 
 @worker.app_message_handler("ccm.dispacher", [WorkerStates.APP])
 @worker.ws_message_handler("ccm.dispacher", [WorkerStates.ANY])
@@ -582,8 +585,13 @@ def get_ccm_finish(client: BlockingAMQPClient, props: pika.spec.BasicProperties,
 
         worker.restart()
 
+
     except Exception as e:
         print('Error metodo finish')
+
+    print('=================')
+    print(f'Finalizo ejecucion de Finish')
+    print('=================')
 
 # TODO: Envio del Stock a demana del Servidor
 @worker.ws_message_handler("ccm.stock", [WorkerStates.ANY])

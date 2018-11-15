@@ -218,6 +218,7 @@ class TCPDataAdapter(AbstractDataAdapter):
                 break
             except OSError:
                 print('HMS-er: 002 OSError ')
+               
                 break
         return result
 

@@ -345,10 +345,12 @@ class QueueDestroid:
 
     def queue_delete(self,_queue:str):
         try:
+            print(f'==>>Eliminado Cola:{_queue}')
             Conexion=pika.BlockingConnection(pika.URLParameters(self.Credential))
             Canal:Channel=Conexion.channel()
             Canal.queue_delete(_queue,False,False)
             Canal.close()
+            print(f'==>> HMS:  Cola Eliminada:{_queue}')
         except Exception:
             print('Error Eliminando Cola')
 

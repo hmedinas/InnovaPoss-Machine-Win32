@@ -145,6 +145,24 @@ def AddTimeConectionWorker(time_new: int):
         print(f'****************************************')
         worker.Fecha = _FechaResult
 
+def AddTimeConectionIndependency(time_new: int):
+    # si sobra mas de 1 minuto no se suma nada
+    h1 = worker.Fecha
+    h2 = FechaActual()
+    hhmmss = h1 - h2
+    Segundos = hhmmss.seconds
+
+    worker.KeyTime = worker.KeyTime + time_new
+    _FechaActual = worker.Fecha
+    _FechaNueva = datetime.timedelta(seconds=time_new)
+    _FechaResult = _FechaActual + _FechaNueva
+    print(f'***************************************')
+    print(f'Fecha Actual: {FechaActual()}')
+    print(f'Fecha Bloq: {worker.Fecha}')
+    print(f'Nueva Fe. Bloq: {_FechaResult}')
+    print(f'****************************************')
+    worker.Fecha = _FechaResult
+
 def MessageJsonStock(Carril: str = None):
     _CarrilesFormat: str = '''{
             "11":2,
@@ -543,12 +561,18 @@ def DispacherProduct(client: BlockingAMQPClient, props: pika.spec.BasicPropertie
         _Result.Mensaje = ErrorProcess.DESCONOCIDO
         msg = worker.messageJsonOutput(_Result)
         print(f'Estado Maquina: {worker.current_state}')
-        worker.cur_app_user_client.send_message(f'{msg}', props=_props)
-
+        if (worker.current_state == WorkerStates.APP):
+            worker.cur_app_user_client.send_message(f'{msg}', props=_props)
+        else:
+            print(f'>>> Sin cola a cual notificar')
     finally:
         msg = worker.messageJsonOutput(_Result)
         print(f'Mensaje : {msg}')
-        worker.cur_app_user_client.send_message(f'{msg}', props=_props)
+        if (worker.current_state == WorkerStates.WAIT_PRODUCT_OUT):
+            worker.cur_app_user_client.send_message(f'{msg}', props=_props)
+        else:
+            print(f'>>> Sin cola a cual notificar')
+
         if (_Result.Status == 'OK'):
             if _Promo:
                 print(f'===========  PROMO ============')
@@ -1084,7 +1108,9 @@ def rasp_Cancel(client: BlockingAMQPClient, props: pika.spec.BasicProperties, me
 
     finally:
         msg = worker.messageJsonOutput(_Result)
-        client.send_message(msg)
+        worker.cur_app_user_client.send_message(f'{msg}', props)
+
+        #client.send_message(msg, props)
 
 # TODO: Prepara el Aplicativo para ventas al Contado, hace una devolucion de las monedas ingresadas previas
 @worker.app_message_handler("ccm.prepare_", [WorkerStates.APP,WorkerStates.WAIT_PRODUCT_OUT])
@@ -1387,7 +1413,72 @@ def get_ccm_dispacher(client: BlockingAMQPClient, props: pika.spec.BasicProperti
                 worker.isFinish=False
                 print(f'Estado Maquina: {worker.current_state}')
 
+#TODO: Tiempo extra de conexion
+@worker.app_message_handler("cmm.Info",[WorkerStates.APP])
+@worker.ws_message_handler("ccm.Info",[WorkerStates.ANY])
+def SetTimeInfo(client: BlockingAMQPClient, props: pika.spec.BasicProperties, message: str) -> None:
+    try:
+        print('Time Extra: Info 15 segundos')
+        _Result = MessageJson()
+        _Result.Accion="TIME"
+        AddTimeConectionIndependency(15)
 
+        _Result.TimeBloq = str(TimeBloq())
+        _Result.Status = 'OK'
+        _Result.Mensaje = SussesProcess.ADD_TIME
+
+        _props = pika.spec.BasicProperties()
+        _props.expiration = '30000'
+        msg = worker.messageJsonOutput(_Result)
+
+        print(f'Mensaje : {msg}')
+        client.send_message(f'{msg}')
+
+    except Exception as ex:
+        print('Error..... dispacher ')
+        print(ex)
+        _Result.Status = "KO"
+        _Result.Success = 'false'
+        _Result.Mensaje = ErrorProcess.DESCONOCIDO
+        msg = worker.messageJsonOutput(_Result)
+        print(f'Mensaje : {msg}')
+        client.send_message(f'{msg}')
+    finally:
+        pass
+
+
+@worker.app_message_handler("cmm.Pay", [WorkerStates.APP])
+@worker.ws_message_handler("ccm.Pay", [WorkerStates.ANY])
+def SetTimePay(client: BlockingAMQPClient, props: pika.spec.BasicProperties, message: str) -> None:
+    try:
+        print('Time Extra: Info 15 segundos')
+        _Result = MessageJson()
+        _Result.Accion = "TIME"
+
+        AddTimeConectionIndependency(45)
+        _Result.TimeBloq = str(TimeBloq())
+
+        _Result.Status = 'OK'
+        _Result.Mensaje = SussesProcess.ADD_TIME
+
+        _props = pika.spec.BasicProperties()
+        _props.expiration = '30000'
+        msg = worker.messageJsonOutput(_Result)
+
+        print(f'Mensaje : {msg}')
+        client.send_message(f'{msg}')
+
+    except Exception as ex:
+        print('Error..... dispacher ')
+        print(ex)
+        _Result.Status = "KO"
+        _Result.Success = 'false'
+        _Result.Mensaje = ErrorProcess.DESCONOCIDO
+        msg = worker.messageJsonOutput(_Result)
+        print(f'Mensaje : {msg}')
+        client.send_message(f'{msg}')
+    finally:
+        pass
 #region
 #==============================================================================
 #==============================================================================
@@ -1407,6 +1498,85 @@ def Off_TV(client: BlockingAMQPClient, props: pika.spec.BasicProperties, message
     print(f'MENSAJE IMPUT: {message}')
     os.system("echo 'standby 0' | cec-client -s")
     pass
+
+
+#endregion
+#region
+#==============================================================================
+#               CARRITO DE COMPRAS
+#==============================================================================
+@worker.ws_message_handler("CARRITO",[WorkerStates.ANY])
+@worker.app_message_handler("CARRITO", [WorkerStates.ANY])
+def CarritoCompras(client:BlockingAMQPClient,props: pika.spec.BasicProperties, message: str)-> None:
+    print(f'=======================')
+    print(f'Carrito:{message}')
+
+    print('=========================')
+    print('    CARRITO        ')
+    _Result = MessageJson()
+    _Result.Accion = "CARRITO"
+    #_Result.TimeBloq = str(TimeBloq())
+    _Promo: bool = False
+    _props = pika.spec.BasicProperties()
+    _props.expiration = '30000'
+    oQueueDestroid = QueueDestroid()
+    print(f'Mensaje Input: {message}')
+    print('=========================')
+
+
+    try:
+        params: dict = json.loads(message)
+
+        #_IdUser: str = str(params['User'])
+        #_IdCamp: str = str(params['Camp'])
+        _IdUser='null'
+        _IdCamp='null'
+
+        lstCarriles=params['CARRILES']
+
+        print(f'----> Ejecutando CCM_Getstatus')
+        reply = worker.hardware_client.transact_message_to_ccm("CCM_Getstatus")
+        print(f'CCM_Getstatus: {reply}')
+        print(f'-----> Fin CCM_Getstatus')
+        if 'OK' in reply:
+            print('Comando VISA')
+            reply = worker.hardware_client.transact_message_to_ccm("CCM_Visa")
+            print(f'CCM_Visa: {reply}')
+            if 'OK' in reply:
+                for list in lstCarriles:
+                    print(f'CCM_OutStock({list})')
+                    Rpt=worker.hardware_client.transact_message_to_ccm("CCM_OutStock("+list+")")
+                    print(f'RPT >>>>> {Rpt}')
+
+                    _Result.Mensaje = SussesProcess.CCM_WRITE
+                    # Todo: envio de cambio de Stock al servidor
+                    msgNew = MessageJsonDispacher(list, _User=_IdUser, _Camp=_IdCamp)
+                    print(f'{msgNew}')
+                    oQueueDestroid.newMessageServer(msgNew, props=None, queue_name=NameQueueServer())
+
+        _Result.Status = "OK"
+        msg = worker.messageJsonOutput(_Result)
+        print(f'Mensaje : {msg}')
+        # se envia el mensaje al cliente
+        client.send_message(f'{msg}')
+
+
+
+    except Exception as ex:
+        print('Error..... Carrito ')
+        print(ex)
+        _Result.Status = "KO"
+        _Result.Success = 'false'
+        _Result.Mensaje = ErrorProcess.DESCONOCIDO
+        msg = worker.messageJsonOutput(_Result)
+        print(f'Mensaje : {msg}')
+        client.send_message(f'{msg}')
+        print(f'Estado Maquina: {worker.current_state}')
+    finally:
+        worker.precioProducto = 0
+        worker.importeIngresado = 0
+        worker.isFinish = False
+        print(f'Estado Maquina: {worker.current_state}')
 
 
 #endregion

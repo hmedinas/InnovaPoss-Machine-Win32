@@ -174,6 +174,7 @@ class SussesProcess():
     SET_STOCK = "Stock Agregado con Exito"
     SET_STOCK_FULL = "Stock Agregado con Exito"
     SET_PRICE = "Actiualizacion de Precio Correcto"
+    ADD_TIME = "Tiempo extra Asignado"
 
 class ConstantesProcess():
     TimeMessageExpire:str='60000'

@@ -201,6 +201,8 @@ ehthumbs_vista.db
 
 # Folder config file
 Desktop.ini
+*.config
+run_production.sh
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/

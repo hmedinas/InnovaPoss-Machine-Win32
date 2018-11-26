@@ -465,32 +465,24 @@ class HardwareWorker:
         if((self.current_state==WorkerStates.WAIT_PRODUCT_OUT or self.current_state==WorkerStates.WAIT_PRODUCT_OUT_LOCAL) and (('CCM_Producto_OUT' in message)or ('CCM_Producto_Out' in message ))):
             print('Producto retirado OK')
             print('Valida CCM_Producto_OUT Y WAIT_PRODUCT_OUT_LOCAL')
+            print(f'Estado Machine:{self.current_state}')
+            print(f'isFinish:{self.isFinish}')
+
             if(self.current_state==WorkerStates.WAIT_PRODUCT_OUT):
                 if (self.isFinish==True):
                     self.current_state==WorkerStates.IDLE
                 else:
                     self.current_state=WorkerStates.APP
-
-                #_Result = MessageJson()
-                #_Result.Accion = "PRODUCT OUT"
-                #_Promo: bool = False
-                #_props = pika.spec.BasicProperties()
-                #_props.expiration = '30000'
-                #_Result.Status = 'OK'
-                #_Result.Mensaje = 'Producto en tambor'
-                #msg = self.messageJsonOutput(_Result)
-                #self.cur_app_user_client.send_message(f'{msg}', _props)
-
+                    print(f'Cambiado Estado:{self.current_state}')
             else:
                 if (self.isFinish == True):
                     self.current_state == WorkerStates.IDLE
                 else:
                     self.current_state = WorkerStates.LOCAL
 
+
             self.importeIngresado=0
             self.precioProducto=0
-
-
 
             return 'OK'
 
